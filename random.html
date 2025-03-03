@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Question Trainer</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 60%;
+            margin: 50px auto;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 90%;
+            height: 120px;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            color: black;
+            resize: none;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+
+        .btn:hover { opacity: 0.8; }
+
+        .question-box, .answer-box {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            min-height: 50px;
+        }
+
+        #answerBox {
+            display: none;
+        }
+
+        .toggle-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .toggle-label {
+            font-size: 16px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Random Question Trainer</h2>
+        <textarea id="questionInput" placeholder="Nhập câu hỏi và câu trả lời, mỗi dòng một câu hỏi, tiếp theo là câu trả lời bắt đầu bằng '-'"></textarea>
+        <br>
+        <button class="btn btn-success" onclick="loadQuestions()">Lưu danh sách</button>
+        <button class="btn btn-danger" onclick="clearQuestions()">Xóa danh sách</button>
+        <button class="btn btn-primary" onclick="randomQuestion()">Random</button>
+        <button class="btn btn-warning" onclick="repeatQuestion()">Đọc lại</button>
+        <button class="btn btn-secondary" onclick="toggleAnswer()">Hiện đáp án</button>
+
+        <div class="toggle-container">
+            <input type="checkbox" id="toggleQuestion" onchange="toggleQuestionVisibility()">
+            <label for="toggleQuestion" class="toggle-label">Ẩn/Hiện câu hỏi</label>
+        </div>
+
+        <div id="questionBox" class="question-box"></div>
+        <div id="answerBox" class="answer-box"></div>
+    </div>
+
+    <script>
+        let questions = [];
+        let remainingQuestions = [];
+        let lastQuestion = "";
+        let lastAnswer = "";
+        let isAnswerVisible = false;
+        let isQuestionHidden = false;
+
+        function loadQuestions() {
+            const inputText = document.getElementById("questionInput").value.trim();
+            if (inputText === "") {
+                alert("Vui lòng nhập danh sách câu hỏi!");
+                return;
+            }
+
+            const lines = inputText.split("\n").map(q => q.trim());
+            questions = [];
+            for (let i = 0; i < lines.length; i++) {
+                if (!lines[i].startsWith("-") && i + 1 < lines.length && lines[i + 1].startsWith("-")) {
+                    questions.push({ question: lines[i], answer: lines[i + 1].substring(1).trim() });
+                }
+            }
+
+            remainingQuestions = [...questions];
+            document.getElementById("questionBox").innerText = "Danh sách đã được lưu!";
+            document.getElementById("answerBox").style.display = "none";
+        }
+
+        function clearQuestions() {
+            questions = [];
+            remainingQuestions = [];
+            lastQuestion = "";
+            lastAnswer = "";
+            document.getElementById("questionInput").value = "";
+            document.getElementById("questionBox").innerText = "Danh sách đã được xóa!";
+            document.getElementById("answerBox").style.display = "none";
+        }
+
+        function randomQuestion() {
+            if (remainingQuestions.length === 0) {
+                document.getElementById("questionBox").innerText = "Finish! Reset danh sách...";
+                document.getElementById("answerBox").style.display = "none";
+                remainingQuestions = [...questions];
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * remainingQuestions.length);
+            const picked = remainingQuestions.splice(randomIndex, 1)[0];
+
+            lastQuestion = picked.question;
+            lastAnswer = picked.answer;
+
+            if (!isQuestionHidden) {
+                document.getElementById("questionBox").innerText = lastQuestion;
+            } else {
+                document.getElementById("questionBox").innerText = "(Ẩn câu hỏi)";
+            }
+
+            document.getElementById("answerBox").style.display = "none";
+            isAnswerVisible = false;
+            readText(lastQuestion);
+        }
+
+        function repeatQuestion() {
+            if (lastQuestion === "") {
+                alert("Chưa có câu hỏi nào được chọn!");
+                return;
+            }
+            readText(lastQuestion);
+        }
+
+        function toggleAnswer() {
+            if (lastAnswer === "") {
+                alert("Chưa có câu trả lời nào!");
+                return;
+            }
+
+            isAnswerVisible = !isAnswerVisible;
+            const answerBox = document.getElementById("answerBox");
+            if (isAnswerVisible) {
+                answerBox.innerText = lastAnswer;
+                answerBox.style.display = "block";
+            } else {
+                answerBox.style.display = "none";
+            }
+        }
+
+        function toggleQuestionVisibility() {
+            isQuestionHidden = document.getElementById("toggleQuestion").checked;
+            if (isQuestionHidden) {
+                document.getElementById("questionBox").innerText = "(Ẩn câu hỏi)";
+            } else if (lastQuestion !== "") {
+                document.getElementById("questionBox").innerText = lastQuestion;
+            }
+        }
+
+        function readText(text) {
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = "en-US";
+            speech.rate = 1;
+            speechSynthesis.speak(speech);
+        }
+    </script>
+</body>
+</html> 
